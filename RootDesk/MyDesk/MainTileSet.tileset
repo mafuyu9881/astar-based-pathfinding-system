@@ -1,0 +1,35 @@
+{
+  "Id": "",
+  "GameId": "",
+  "EntryKey": "tileset://9e8cb63e-a523-4436-8c1c-6dd6e7fb674f",
+  "ContentType": "x-mod/tileset",
+  "Content": "",
+  "Usage": 0,
+  "UsePublish": 1,
+  "UseService": 0,
+  "CoreVersion": "1.25.0.0",
+  "StudioVersion": "0.1.0.0",
+  "DynamicLoading": 0,
+  "ContentProto": {
+    "Use": "Json",
+    "Json": {
+      "name": "MainTileSet",
+      "id": "tileset://9e8cb63e-a523-4436-8c1c-6dd6e7fb674f",
+      "datas": [
+        {
+          "Id": "12642ff43b27420da54c6a1be979c905",
+          "Name": "Name0",
+          "IsCollidable": false
+        },
+        {
+          "Id": "8ec8012f6f2f4b469b645037315b9f70",
+          "Name": "Name1",
+          "IsCollidable": false
+        }
+      ],
+      "worldCoreVersion": "1.25.0.0",
+      "worldStudioVersion": "0.1.0.0",
+      "useService": 0
+    }
+  }
+}
