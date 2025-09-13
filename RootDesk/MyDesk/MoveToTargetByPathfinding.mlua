@@ -1,0 +1,79 @@
+@BTNode
+script MoveToTargetByPathfinding extends BTNode
+
+	method any OnBehave(number deltaTime)
+		---@type StatefulAI
+		local parentAI = self.ParentAI
+		if parentAI == nil then
+			return BehaviourTreeStatus.Failure
+		end
+		
+		local parentEntity = parentAI.Entity
+		if parentEntity == nil then
+			return BehaviourTreeStatus.Failure
+		end
+
+		local mapEntityPath = "/maps/" .. parentEntity.CurrentMapName
+		local mapEntity = _EntityService:GetEntityByPath(mapEntityPath)
+		if mapEntity == nil then
+			return BehaviourTreeStatus.Failure
+		end
+
+		local main = mapEntity.Main
+		if main == nil then
+			return BehaviourTreeStatus.Failure
+		end
+		
+		local parentTransform = parentEntity.TransformComponent
+		if parentTransform == nil then
+			return BehaviourTreeStatus.Failure
+		end
+
+		local parentMovement = parentEntity.MovementComponent
+		if parentMovement == nil then
+			return BehaviourTreeStatus.Failure
+		end
+
+		local anyUserEntity = parentAI:ReadAnyUserEntity()
+		if anyUserEntity == nil then
+			return BehaviourTreeStatus.Failure
+		end
+		
+		local anyUserTransform = anyUserEntity.TransformComponent
+		if anyUserTransform == nil then
+			return BehaviourTreeStatus.Failure
+		end
+		
+		local departureWorldPosition = parentTransform.WorldPosition
+		local arrivalWorldPosition = anyUserTransform.WorldPosition
+		local waypointWorldPositions = _Pathfinding:ComputePath(
+			departureWorldPosition,
+			arrivalWorldPosition,
+			main.cellWorldSize,
+			main.grid,
+			main.gridHeight,
+			main.gridWidth
+		)
+		if waypointWorldPositions == nil or #waypointWorldPositions < 2 then
+			return BehaviourTreeStatus.Failure
+		end
+		
+		for index, waypointWorldPosition in ipairs(waypointWorldPositions) do
+			if index < #waypointWorldPositions then
+				_Debug:DrawLine(
+					parentEntity.CurrentMap,
+					waypointWorldPositions[index]:ToVector2(),
+					waypointWorldPositions[index + 1]:ToVector2(),
+					0.025,
+					Color(0, 1, 1),
+					0.05
+				)
+			end
+		end
+		
+		parentMovement:MoveToDirection((waypointWorldPositions[2] - departureWorldPosition):ToVector2():Normalize(), 0)
+		
+		return BehaviourTreeStatus.Success
+	end
+
+end

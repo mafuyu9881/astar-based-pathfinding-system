@@ -1,0 +1,23 @@
+@Component
+script Stalker extends StatefulAI
+	property table lastFigureEntities = {}
+
+	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		local root = SequenceNode("root")
+
+		local moveToTargetByPathfinding = self:CreateNode("MoveToTargetByPathfinding")
+		root:AttachChild(moveToTargetByPathfinding)
+		
+		self:SetRootNode(root)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void OnUpdate()
+		local userEntities = _UserService.UserEntities
+		for userId, userEntity in pairs(userEntities) do
+			self:WriteAnyUserEntity(userEntity)
+			break
+		end
+	end
+end

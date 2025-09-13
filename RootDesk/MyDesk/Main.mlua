@@ -1,0 +1,22 @@
+@Component
+script Main extends Component
+	@HideFromInspector
+	property integer cellWorldSize = 1
+	@HideFromInspector
+	property integer gridHeight = 10
+	@HideFromInspector
+	property integer gridWidth = 10
+	@HideFromInspector
+	property table grid = {
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 0, 1, 1, 1, 1, 1, 1, 0, 1,
+		1, 1, 1, 0, 1, 0, 0, 0, 1, 1,
+		1, 1, 0, 0, 1, 1, 1, 0, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1, 0, 1, 1, 1, 0, 0, 1, 1,
+		1, 1, 0, 0, 0, 1, 0, 1, 1, 1,
+		1, 0, 1, 1, 1, 1, 1, 1, 0, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	}
+end

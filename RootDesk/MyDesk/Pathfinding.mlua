@@ -1,0 +1,198 @@
+@Logic
+script Pathfinding extends Logic
+	property number sqrt2 = math.sqrt(2)
+
+	property table adjOffsets = {}
+
+	method void OnBeginPlay()
+		local sqrt2 = self.sqrt2
+
+		self.adjOffsets = {
+			{ row = -1, col =  0, weight = 1.0 },
+			{ row =  1, col =  0, weight = 1.0 },
+			{ row =  0, col = -1, weight = 1.0 },
+			{ row =  0, col =  1, weight = 1.0 },
+			{ row = -1, col = -1, weight = sqrt2 },
+			{ row = -1, col =  1, weight = sqrt2 },
+			{ row =  1, col = -1, weight = sqrt2 },
+			{ row =  1, col =  1, weight = sqrt2 },
+		}
+	end
+
+	method table ComputePath(Vector3 departureWorldPosition, Vector3 arrivalWorldPosition, number cellWorldSize, table grid, integer gridHeight, integer gridWidth)
+		local waypointWorldPositions = nil
+		local arrivalRow, arrivalCol = self:ConvertWorldToIndex2D(arrivalWorldPosition, cellWorldSize, gridHeight, gridWidth)
+		if self:Walkable(arrivalRow, arrivalCol, grid, gridHeight, gridWidth) then
+			local departureRow, departureCol = self:ConvertWorldToIndex2D(departureWorldPosition, cellWorldSize, gridHeight, gridWidth)
+			if departureRow == arrivalRow and departureCol == arrivalCol then
+				waypointWorldPositions = {
+					departureWorldPosition,
+					arrivalWorldPosition
+				}
+			else
+				local adjOffsets = self.adjOffsets
+
+				local departureIndex = self:ConvertIndex2DTo1D(departureRow, departureCol, gridWidth)
+				local arrivalIndex = self:ConvertIndex2DTo1D(arrivalRow, arrivalCol, gridWidth)
+				local cellCount = gridHeight * gridWidth
+
+				local gScores = {}
+				gScores[departureIndex] = 0
+
+				local frontier = _PriorityQueue:New()
+				_PriorityQueue:Enqueue(frontier, departureIndex, gScores[departureIndex] + self:ComputeOctileDistance(departureRow, departureCol, arrivalRow, arrivalCol))
+
+				local parentIndices = {}
+
+				while not _PriorityQueue:Empty(frontier) do
+					local currIndex, _ = _PriorityQueue:Dequeue(frontier)
+
+					if currIndex == arrivalIndex then
+						local waypointIndices = {}
+						while currIndex ~= nil do
+							table.insert(waypointIndices, 1, currIndex)
+							currIndex = parentIndices[currIndex]
+						end
+
+						waypointWorldPositions = {}
+						for _, waypointIndex in ipairs(waypointIndices) do
+							local row, col = self:ConvertIndex1DTo2D(waypointIndex, gridWidth)
+							local worldPosition = self:ConvertIndex2DToWorld(row, col, cellWorldSize, gridHeight, gridWidth)
+							table.insert(waypointWorldPositions, worldPosition)
+						end
+						
+						waypointWorldPositions[1] = departureWorldPosition
+						waypointWorldPositions[#waypointWorldPositions] = arrivalWorldPosition
+						
+						break
+					else
+						local currRow, currCol = self:ConvertIndex1DTo2D(currIndex, gridWidth)
+
+						for _, adjOffset in ipairs(adjOffsets) do
+							local adjRow = currRow + adjOffset.row
+							local adjCol = currCol + adjOffset.col
+							if self:AdjacencyValidation(currRow, currCol, adjRow, adjCol, grid, gridHeight, gridWidth) == false then
+								continue
+							end
+
+							local adjIndex = self:ConvertIndex2DTo1D(adjRow, adjCol, gridWidth)
+							local currGScore = gScores[currIndex]
+							local oldAdjGScore = gScores[adjIndex]
+							local newAdjGScore = currGScore + adjOffset.weight
+							if oldAdjGScore and newAdjGScore >= oldAdjGScore then
+								continue
+							end
+							
+							parentIndices[adjIndex] = currIndex
+							gScores[adjIndex] = newAdjGScore
+							_PriorityQueue:Enqueue(frontier, adjIndex, newAdjGScore + self:ComputeOctileDistance(adjRow, adjCol, arrivalRow, arrivalCol))
+						end
+					end
+				end
+			end
+		end
+		return waypointWorldPositions
+	end
+	method number ComputeOctileDistance(integer row1, integer col1, integer row2, integer col2)
+		local dx = math.abs(col2 - col1)
+		local dy = math.abs(row2 - row1)
+		local min = math.min(dx, dy)
+		local max = math.max(dx, dy)
+		return max + (self.sqrt2 - 1) * min
+	end
+	method boolean AdjacencyValidation(integer srcRow, integer srcCol, integer dstRow, integer dstCol, table grid, integer gridHeight, integer gridWidth)
+		if not self:InBounds(dstRow, dstCol, gridHeight, gridWidth) then
+			return false
+		end
+
+		if not self:Walkable(dstRow, dstCol, grid, gridHeight, gridWidth) then
+			return false
+		end
+
+		local deltaRow = dstRow - srcRow
+		local deltaCol = dstCol - srcCol
+
+		if deltaRow ~= 0 and deltaCol ~= 0 then
+			if not self:InBounds(srcRow, srcCol + deltaCol, gridHeight, gridWidth) then
+				return false
+			end
+
+			if not self:Walkable(srcRow, srcCol + deltaCol, grid, gridHeight, gridWidth) then
+				return false
+			end
+
+			if not self:InBounds(srcRow + deltaRow, srcCol, gridHeight, gridWidth) then
+				return false
+			end
+
+			if not self:Walkable(srcRow + deltaRow, srcCol, grid, gridHeight, gridWidth) then
+				return false
+			end
+		end
+		
+		return true
+	end
+	method boolean Walkable(integer row, integer col, table grid, integer gridHeight, integer gridWidth)
+		if grid == nil then
+			return true
+		end
+
+		if not self:InBounds(row, col, gridHeight, gridWidth) then
+			return false
+		end
+		
+		local index = self:ConvertIndex2DTo1D(row, col, gridWidth)
+		if grid[index] < 1 then
+			return false
+		end
+
+		return true
+	end
+
+	-- converter
+
+	method any InBounds(integer row, integer col, integer gridHeight, integer gridWidth)
+		if row < 1 or row > gridHeight then
+			return false
+		end
+
+		if col < 1 or col > gridWidth then
+			return false
+		end
+
+		return true
+	end
+	method integer ConvertIndex2DTo1D(integer row, integer col, integer gridWidth)
+		return (row - 1) * gridWidth + col
+	end
+	method any ConvertIndex1DTo2D(integer index, integer gridWidth)
+		local row = math.floor((index - 1) / gridWidth) + 1
+		local col = ((index - 1) % gridWidth) + 1
+		return row, col
+	end
+	method any ConvertIndex2DToWorld(integer row, integer col, number cellWorldSize, integer gridHeight, integer gridWidth)
+		local gridWorldHeight = cellWorldSize * gridHeight
+		local gridWorldWidth = cellWorldSize * gridWidth
+
+		local y = (row - 0.5) * cellWorldSize - (gridWorldHeight * 0.5)
+		local x = (col - 0.5) * cellWorldSize - (gridWorldWidth * 0.5)
+
+		return Vector3(x, y, 0)
+	end
+	method any ConvertWorldToIndex2D(Vector3 worldPosition, number cellWorldSize, integer gridHeight, integer gridWidth)
+		local gridWorldHeight = cellWorldSize * gridHeight
+		local gridWorldWidth = cellWorldSize * gridWidth
+
+		local gridHalfWorldHeight = gridWorldHeight * 0.5
+		local gridHalfWorldWidth = gridWorldWidth * 0.5
+
+		local row = math.floor((worldPosition.y + gridWorldHeight * 0.5) / cellWorldSize)
+		local col = math.floor((worldPosition.x + gridWorldWidth * 0.5) / cellWorldSize)
+
+		-- 0 기반 인덱스에서 1 기반 인덱스로 변환
+		row += 1
+		col += 1
+
+		return row, col
+	end
+end
