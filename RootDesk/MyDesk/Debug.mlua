@@ -1,0 +1,66 @@
+@Logic
+script Debug extends Logic
+	method Vector2 RotateVector(Vector2 v, number deg)
+		local rad = math.rad(deg)
+		local cosA = math.cos(rad)
+		local sinA = math.sin(rad)
+		return Vector2(v.x * cosA - v.y * sinA, v.x * sinA + v.y * cosA)
+	end
+	method number Vector2ToRad(Vector2 v)
+		return math.atan(v.y, v.x)
+	end
+	method number Vector2ToDeg(Vector2 v)
+		return math.deg(self:Vector2ToRad(v))
+	end
+
+	method Entity SpawnFigureEntity(Entity parent)
+		local entity = _SpawnService:SpawnByModelId(
+			"model://transformonly",
+			"figure",
+			Vector3.zero,
+			parent
+		)
+		entity:AddComponent("PolygonRendererComponent")
+		return entity
+	end
+
+	method Entity DrawLine(Entity currentMap, Vector2 startWorldPosition2D, Vector2 endWorldPosition2D, number thickness, Color color, number lifetime)
+		local diff2D = startWorldPosition2D - endWorldPosition2D
+		return self:DrawOrientedBox(
+			currentMap,
+			(startWorldPosition2D + endWorldPosition2D) * 0.5,
+			Vector2(diff2D:Magnitude(), thickness),
+			self:Vector2ToDeg(diff2D),
+			color,
+			lifetime
+		)
+	end
+
+	method Entity DrawOrientedBox(Entity currentMap, Vector2 worldPosition2D, Vector2 size, number deg, Color color, number lifetime)
+		local figureEntity = self:SpawnFigureEntity(currentMap)
+
+		local prc = figureEntity.PolygonRendererComponent
+		prc.Color = color
+		prc.Points:Clear()
+		local halfSize = size * 0.5
+		local points = {
+			Vector2(-halfSize.x, -halfSize.y),
+			Vector2(halfSize.x, -halfSize.y),
+			Vector2(halfSize.x, halfSize.y),
+			Vector2(-halfSize.x, halfSize.y)
+		}
+		local rotatedPoints = {}
+		for index, point in ipairs(points) do
+			table.insert(rotatedPoints, self:RotateVector(point, deg) + worldPosition2D)
+		end
+		for index, rotatedPoint in ipairs(rotatedPoints) do
+			prc.Points:Add(rotatedPoint)
+		end
+		
+		if lifetime > 0 then
+			_EntityService:Destroy(figureEntity, lifetime)
+		end
+
+		return figureEntity
+	end
+end
