@@ -46,34 +46,37 @@ script MoveToTargetByPathfinding extends BTNode
 		
 		local departureWorldPosition = parentTransform.WorldPosition
 		local arrivalWorldPosition = anyUserTransform.WorldPosition
-		local waypointWorldPositions = _Pathfinding:ComputePath(
-			departureWorldPosition,
-			arrivalWorldPosition,
-			main.cellWorldSize,
-			main.grid,
-			main.gridHeight,
-			main.gridWidth
-		)
-		if waypointWorldPositions == nil or #waypointWorldPositions < 2 then
-			return BehaviourTreeStatus.Failure
-		end
-		
-		for index, waypointWorldPosition in ipairs(waypointWorldPositions) do
-			if index < #waypointWorldPositions then
-				_Debug:DrawLine(
-					parentEntity.CurrentMap,
-					waypointWorldPositions[index]:ToVector2(),
-					waypointWorldPositions[index + 1]:ToVector2(),
-					0.025,
-					Color(0, 1, 1),
-					0.05
-				)
+		if (arrivalWorldPosition - departureWorldPosition):ToVector2():Magnitude() > 0.75 then
+			local waypointWorldPositions = _Pathfinding:ComputePath(
+				departureWorldPosition,
+				arrivalWorldPosition,
+				main.cellWorldSize,
+				main.grid,
+				main.gridHeight,
+				main.gridWidth
+			)
+			if waypointWorldPositions == nil or #waypointWorldPositions < 2 then
+				return BehaviourTreeStatus.Failure
 			end
+			
+			for index, waypointWorldPosition in ipairs(waypointWorldPositions) do
+				if index < #waypointWorldPositions then
+					_Debug:DrawLine(
+						parentEntity.CurrentMap,
+						waypointWorldPositions[index]:ToVector2(),
+						waypointWorldPositions[index + 1]:ToVector2(),
+						0.025,
+						Color(0, 1, 1),
+						0.05
+					)
+				end
+			end
+			
+			parentMovement:MoveToDirection((waypointWorldPositions[2] - departureWorldPosition):ToVector2():Normalize(), 0)
+			return BehaviourTreeStatus.Running
+		else
+			parentMovement:Stop()
+			return BehaviourTreeStatus.Success
 		end
-		
-		parentMovement:MoveToDirection((waypointWorldPositions[2] - departureWorldPosition):ToVector2():Normalize(), 0)
-		
-		return BehaviourTreeStatus.Success
 	end
-
 end
