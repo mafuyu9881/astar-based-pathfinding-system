@@ -1,0 +1,95 @@
+@Logic
+script PriorityQueue extends Logic
+	method table New()
+		return {
+			heapValues = {},
+			heapPriorities = {},
+			currentSize = 0,
+		}
+	end
+
+	method boolean Empty(table pq)
+		return pq.currentSize < 1
+	end
+
+	method integer Size(table pq)
+		return pq.currentSize
+	end
+
+	method void Swim(table pq)
+		local heapValues = pq.heapValues
+		local heapPriorities = pq.heapPriorities
+		local floor = math.floor
+		local i = pq.currentSize
+		while floor(i / 2) > 0 do
+			local half = floor(i / 2)
+			if heapPriorities[i] < heapPriorities[half] then
+				heapValues[i], heapValues[half] = heapValues[half], heapValues[i]
+				heapPriorities[i], heapPriorities[half] = heapPriorities[half], heapPriorities[i]
+			else
+				break
+			end
+			i = half
+		end
+	end
+
+	method integer MinChild(table pq, integer parentIndex)
+		if (parentIndex * 2) + 1 > pq.currentSize then
+			return parentIndex * 2
+		else
+			if pq.heapPriorities[parentIndex * 2] < pq.heapPriorities[parentIndex * 2 + 1] then
+				return parentIndex * 2
+			else
+				return parentIndex * 2 + 1
+			end
+		end
+	end
+	
+	method void Sink(table pq)
+		local currentSize = pq.currentSize
+		local heapValues = pq.heapValues
+		local heapPriorities = pq.heapPriorities
+		local i = 1
+		while (i * 2) <= currentSize do
+			local mc = self:MinChild(pq, i)
+			if heapPriorities[i] > heapPriorities[mc] then
+				heapValues[i], heapValues[mc] = heapValues[mc], heapValues[i]
+				heapPriorities[i], heapPriorities[mc] = heapPriorities[mc], heapPriorities[i]
+				i = mc
+			else
+				break
+			end
+		end
+	end
+
+	method void Enqueue(table pq, any value, integer priority)
+		pq.currentSize = pq.currentSize + 1
+		pq.heapValues[pq.currentSize] = value
+		pq.heapPriorities[pq.currentSize] = priority
+		self:Swim(pq)
+	end
+	
+	method any Dequeue(table pq)
+		if pq.currentSize == 0 then
+			return nil, nil
+		end
+
+		local heapValues = pq.heapValues
+		local heapPriorities = pq.heapPriorities
+		local returnValue, returnPriority = heapValues[1], heapPriorities[1]
+
+		heapValues[1], heapPriorities[1] = heapValues[pq.currentSize], heapPriorities[pq.currentSize]
+		heapValues[pq.currentSize], heapPriorities[pq.currentSize] = nil, nil
+		pq.currentSize = pq.currentSize - 1
+
+		if pq.currentSize > 0 then
+			self:Sink(pq)
+		end
+
+		return returnValue, returnPriority
+	end
+
+	method any Peek(table pq)
+		return pq.heapValues[1], pq.heapPriorities[1]
+	end
+end
