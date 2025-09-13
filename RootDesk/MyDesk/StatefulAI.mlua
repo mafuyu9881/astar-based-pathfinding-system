@@ -1,0 +1,21 @@
+@Component
+script StatefulAI extends AIComponent
+	property table memory = {}
+
+	method void WriteMemory(string key, any value)
+		self.memory[key] = value
+	end
+	method any ReadMemory(string key)
+		return self.memory[key]
+	end
+	
+	method string AnyUserEntityKey()
+		return "AnyUserEntity"
+	end
+	method void WriteAnyUserEntity(Entity userEntity)
+		self:WriteMemory(self:AnyUserEntityKey(), userEntity)
+	end
+	method Entity ReadAnyUserEntity()
+		return self:ReadMemory(self:AnyUserEntityKey())
+	end
+end
