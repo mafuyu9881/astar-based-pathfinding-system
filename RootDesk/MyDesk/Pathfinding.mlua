@@ -54,16 +54,115 @@ script Pathfinding extends Logic
 							currIndex = parentIndices[currIndex]
 						end
 
-						waypointWorldPositions = {}
-						for _, waypointIndex in ipairs(waypointIndices) do
-							local row, col = self:ConvertIndex1DTo2D(waypointIndex, gridWidth)
-							local worldPosition = self:ConvertIndex2DToWorld(row, col, cellWorldSize, gridHeight, gridWidth)
-							table.insert(waypointWorldPositions, worldPosition)
+						local portals = {}
+						for i = 1, #waypointIndices - 1 do
+							local srcWaypointIndex = waypointIndices[i]
+							local srcWaypointRow, srcWaypointCol = self:ConvertIndex1DTo2D(srcWaypointIndex, gridWidth)
+
+							local dstWaypointIndex = waypointIndices[i + 1]
+							local dstWaypointRow, dstWaypointCol = self:ConvertIndex1DTo2D(dstWaypointIndex, gridWidth)
+
+							local portal = self:ComputePortal(
+								srcWaypointRow,
+								srcWaypointCol,
+								dstWaypointRow,
+								dstWaypointCol,
+								cellWorldSize,
+								gridHeight,
+								gridWidth
+							)
+							if portal == nil then
+								continue
+							end
+
+							-- todo: 디버깅용 시각화 코드, 사용 후 제거
+							_Debug:DrawLine(
+								_EntityService:GetEntityByPath("/maps/main"),
+								portal.leftWP:ToVector2(),
+								portal.rightWP:ToVector2(),
+								0.025,
+								Color(1, 0.5, 0),
+								0.05
+							)
+
+							table.insert(portals, portal)
 						end
-						
-						waypointWorldPositions[1] = departureWorldPosition
-						waypointWorldPositions[#waypointWorldPositions] = arrivalWorldPosition
-						
+						table.insert(portals, { leftWP = arrivalWorldPosition, rightWP = arrivalWorldPosition })
+
+						-- todo: 하드 코딩 상태, 데이터화 필요
+						local agentRadius = 0.35 * 0.5
+						local tolerance = 0.001
+
+						waypointWorldPositions = {}
+						table.insert(waypointWorldPositions, departureWorldPosition)
+
+						local firstPortal = portals[1]
+						local funnelApexWP = departureWorldPosition
+						local funnelLeftWP = firstPortal.leftWP
+						local funnelRightWP = firstPortal.rightWP
+						local funnelApexIndex = 0
+						local funnelLeftIndex = 1
+						local funnelRightIndex = 1
+
+						local i = 1
+						while i <= #portals do
+							local portal = portals[i]
+							local portalLeftWP = portal.leftWP
+							local portalRightWP = portal.rightWP
+
+							if self:ComputeParallellogramArea(funnelApexWP, funnelRightWP, portalRightWP) <= 0 then
+								if self:NearlyEqual(funnelApexWP, funnelRightWP, tolerance) or (self:ComputeParallellogramArea(funnelApexWP, funnelLeftWP, portalRightWP) > 0) then
+									funnelRightWP = portalRightWP
+									funnelRightIndex = i
+								else
+									local newFunnelApexWP = funnelLeftWP
+									local newFunnelApexIndex = funnelLeftIndex
+
+									--table.insert(waypointWorldPositions, newFunnelApexWP + (portals[newFunnelApexIndex].rightWP - portals[newFunnelApexIndex].leftWP):Normalize() * agentRadius)
+									table.insert(waypointWorldPositions, newFunnelApexWP)
+									
+									funnelApexWP = newFunnelApexWP
+									funnelApexIndex = newFunnelApexIndex
+									funnelLeftWP = newFunnelApexWP
+									funnelLeftIndex = newFunnelApexIndex
+									funnelRightWP = newFunnelApexWP
+									funnelRightIndex = newFunnelApexIndex
+
+									i = newFunnelApexIndex + 1
+									
+									continue
+								end
+							end
+
+							if self:ComputeParallellogramArea(funnelApexWP, funnelLeftWP, portalLeftWP) >= 0 then
+								if self:NearlyEqual(funnelApexWP, funnelLeftWP, tolerance) or (self:ComputeParallellogramArea(funnelApexWP, funnelRightWP, portalLeftWP) < 0) then
+									funnelLeftWP = portalLeftWP
+									funnelLeftIndex = i
+								else
+									local newFunnelApexWP = funnelRightWP
+									local newFunnelApexIndex = funnelRightIndex
+
+									--table.insert(waypointWorldPositions, newFunnelApexWP + (portals[newFunnelApexIndex].leftWP - portals[newFunnelApexIndex].rightWP):Normalize() * agentRadius)
+									table.insert(waypointWorldPositions, newFunnelApexWP)
+
+									funnelApexWP = newFunnelApexWP
+									funnelApexIndex = newFunnelApexIndex
+									funnelLeftWP = newFunnelApexWP
+									funnelLeftIndex = newFunnelApexIndex
+									funnelRightWP = newFunnelApexWP
+									funnelRightIndex = newFunnelApexIndex
+
+									i = newFunnelApexIndex + 1
+
+									continue
+								end
+							end
+
+							i += 1
+						end
+
+						table.insert(waypointWorldPositions, arrivalWorldPosition)
+
 						break
 					else
 						local currRow, currCol = self:ConvertIndex1DTo2D(currIndex, gridWidth)
@@ -148,6 +247,71 @@ script Pathfinding extends Logic
 
 		return true
 	end
+	method table ComputePortal(integer srcRow, integer srcCol, integer dstRow, integer dstCol, number cellWorldSize, integer gridHeight, integer gridWidth)
+		local srcWP = self:ConvertIndex2DToWorld(srcRow, srcCol, cellWorldSize, gridHeight, gridWidth)
+		local dstWP = self:ConvertIndex2DToWorld(dstRow, dstCol, cellWorldSize, gridHeight, gridWidth)
+		local midpointWP = (srcWP + dstWP) * 0.5
+
+		local portal = nil
+
+		if srcRow == dstRow then
+			if srcCol < dstCol then
+				portal = {
+					leftWP = midpointWP + Vector3(0, 1, 0) * cellWorldSize * 0.5,
+					rightWP = midpointWP + Vector3(0, -1, 0) * cellWorldSize * 0.5
+				}
+			elseif srcCol > dstCol then
+				portal = {
+					leftWP = midpointWP + Vector3(0, -1, 0) * cellWorldSize * 0.5,
+					rightWP = midpointWP + Vector3(0, 1, 0) * cellWorldSize * 0.5
+				}
+			end
+		elseif srcCol == dstCol then
+			if srcRow < dstRow then
+				portal = {
+					leftWP = midpointWP + Vector3(-1, 0, 0) * cellWorldSize * 0.5,
+					rightWP = midpointWP + Vector3(1, 0, 0) * cellWorldSize * 0.5
+				}
+			elseif srcRow > dstRow then
+				portal = {
+					leftWP = midpointWP + Vector3(1, 0, 0) * cellWorldSize * 0.5,
+					rightWP = midpointWP + Vector3(-1, 0, 0) * cellWorldSize * 0.5
+				}
+			end
+		else
+			if srcRow < dstRow and srcCol < dstCol then
+				portal = {
+					leftWP = midpointWP + Vector3(-1, 1, 0) * cellWorldSize,
+					rightWP = midpointWP + Vector3(1, -1, 0) * cellWorldSize
+				}
+			elseif srcRow > dstRow and srcCol < dstCol then
+				portal = {
+					leftWP = midpointWP + Vector3(1, 1, 0) * cellWorldSize,
+					rightWP = midpointWP + Vector3(-1, -1, 0) * cellWorldSize
+				}
+			elseif srcRow > dstRow and srcCol > dstCol then
+				portal = {
+					leftWP = midpointWP + Vector3(1, -1, 0) * cellWorldSize,
+					rightWP = midpointWP + Vector3(-1, 1, 0) * cellWorldSize
+				}
+			elseif srcRow < dstRow and srcCol > dstCol then
+				portal = {
+					leftWP = midpointWP + Vector3(-1, -1, 0) * cellWorldSize,
+					rightWP = midpointWP + Vector3(1, 1, 0) * cellWorldSize
+				}
+			end
+		end
+
+		return portal
+	end
+	method number ComputeParallellogramArea(Vector3 p, Vector3 v0, Vector3 v1)
+		local pToV0 = v0 - p
+		local pToV1 = v1 - p
+		return pToV1.x * pToV0.y - pToV0.x * pToV1.y
+	end
+	method boolean NearlyEqual(Vector3 a, Vector3 b, number tolerance)
+		return math.abs((a:ToVector2() - b:ToVector2()):Magnitude()) <= tolerance
+	end
 
 	-- converter
 
@@ -170,7 +334,7 @@ script Pathfinding extends Logic
 		local col = ((index - 1) % gridWidth) + 1
 		return row, col
 	end
-	method any ConvertIndex2DToWorld(integer row, integer col, number cellWorldSize, integer gridHeight, integer gridWidth)
+	method Vector3 ConvertIndex2DToWorld(integer row, integer col, number cellWorldSize, integer gridHeight, integer gridWidth)
 		local gridWorldHeight = cellWorldSize * gridHeight
 		local gridWorldWidth = cellWorldSize * gridWidth
 
