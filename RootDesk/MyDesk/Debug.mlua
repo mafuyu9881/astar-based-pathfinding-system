@@ -13,20 +13,9 @@ script Debug extends Logic
 		return math.deg(self:Vector2ToRad(v))
 	end
 
-	method Entity SpawnFigureEntity(Entity parent)
-		local entity = _SpawnService:SpawnByModelId(
-			"model://transformonly",
-			"figure",
-			Vector3.zero,
-			parent
-		)
-		entity:AddComponent("PolygonRendererComponent")
-		return entity
-	end
-
-	method Entity DrawLine(Entity currentMap, Vector2 startWorldPosition2D, Vector2 endWorldPosition2D, number thickness, Color color, number lifetime)
+	method void DrawLine(Entity currentMap, Vector2 startWorldPosition2D, Vector2 endWorldPosition2D, number thickness, Color color, number lifetime)
 		local diff2D = startWorldPosition2D - endWorldPosition2D
-		return self:DrawOrientedBox(
+		self:DrawOrientedBox(
 			currentMap,
 			(startWorldPosition2D + endWorldPosition2D) * 0.5,
 			Vector2(diff2D:Magnitude(), thickness),
@@ -36,31 +25,17 @@ script Debug extends Logic
 		)
 	end
 
-	method Entity DrawOrientedBox(Entity currentMap, Vector2 worldPosition2D, Vector2 size, number deg, Color color, number lifetime)
-		local figureEntity = self:SpawnFigureEntity(currentMap)
-
-		local prc = figureEntity.PolygonRendererComponent
-		prc.Color = color
-		prc.Points:Clear()
-		local halfSize = size * 0.5
-		local points = {
-			Vector2(-halfSize.x, -halfSize.y),
-			Vector2(halfSize.x, -halfSize.y),
-			Vector2(halfSize.x, halfSize.y),
-			Vector2(-halfSize.x, halfSize.y)
-		}
-		local rotatedPoints = {}
-		for index, point in ipairs(points) do
-			table.insert(rotatedPoints, self:RotateVector(point, deg) + worldPosition2D)
-		end
-		for index, rotatedPoint in ipairs(rotatedPoints) do
-			prc.Points:Add(rotatedPoint)
-		end
-		
-		if lifetime > 0 then
-			_EntityService:Destroy(figureEntity, lifetime)
-		end
-
-		return figureEntity
+	method void DrawOrientedBox(Entity currentMap, Vector2 worldPosition2D, Vector2 size, number deg, Color color, number lifetime)
+		_EffectService:PlayEffect(
+			"a2cc1cbb89c947c2abdfc62bd80d492b",
+			currentMap,
+			worldPosition2D:ToVector3(),
+			deg,
+			size:ToVector3(),
+			false,
+			{
+				Color = color
+			}
+		)
 	end
 end
