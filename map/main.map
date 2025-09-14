@@ -42,10 +42,7 @@
             },
             {
               "@type": "script.Main",
-              "Enable": true,
-              "cellWorldSize": 1,
-              "gridHeight": 10,
-              "gridWidth": 10
+              "Enable": true
             }
           ],
           "@version": 1
@@ -193,8 +190,8 @@
             {
               "@type": "MOD.Core.TransformComponent",
               "Position": {
-                "x": 2.5,
-                "y": 0.25,
+                "x": -0.01,
+                "y": 0.2,
                 "z": 999.999
               },
               "QuaternionRotation": {

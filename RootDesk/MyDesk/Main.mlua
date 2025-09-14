@@ -1,23 +1,29 @@
 @Component
 script Main extends Component
-	@HideFromInspector
 	property integer cellWorldSize = 1
-	@HideFromInspector
-	property integer gridHeight = 10
-	@HideFromInspector
-	property integer gridWidth = 10
-	@HideFromInspector
+	property integer gridHeight = 20
+	property integer gridWidth = 20
 	property table grid = {
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-		1, 0, 1, 1, 1, 1, 1, 1, 0, 1,
-		1, 1, 1, 0, 1, 0, 0, 0, 1, 1,
-		1, 1, 0, 0, 1, 1, 1, 0, 1, 1,
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-		1, 1, 0, 1, 1, 1, 0, 0, 1, 1,
-		1, 1, 0, 0, 0, 1, 0, 1, 1, 1,
-		1, 0, 1, 1, 1, 1, 1, 1, 0, 1,
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
+		1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1,
+		1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1,
+		1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
+		1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1,
+		1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+		1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1,
+		1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1,
+		1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1,
+		1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1,
+		1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1,
+		1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0,
+		1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1,
 	}
 
 	@ExecSpace("ServerOnly")
@@ -48,7 +54,12 @@ script Main extends Component
 
 				local cellWorldPosition = _Convert:Index2DToWorld(row, col, cellWorldSize, gridHeight, gridWidth)
 
-				rectTileMap:SetTile(tileIndex, Vector2Int(cellWorldPosition.x, cellWorldPosition.y))
+				local cellPosition = Vector2Int(cellWorldPosition.x, cellWorldPosition.y)
+
+				print("cellPosition.x: " .. cellPosition.x)
+				print("cellPosition.y: " .. cellPosition.y)
+
+				rectTileMap:SetTile(tileIndex, cellPosition)
 			end
 		end
 	end
