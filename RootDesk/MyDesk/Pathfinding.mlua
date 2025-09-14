@@ -68,22 +68,13 @@ script Pathfinding extends Logic
 								dstWaypointRow,
 								dstWaypointCol,
 								cellWorldSize,
+								grid,
 								gridHeight,
 								gridWidth
 							)
 							if portal == nil then
 								continue
 							end
-
-							-- todo: 디버깅용 시각화 코드, 사용 후 제거
-							_Debug:DrawLine(
-								_EntityService:GetEntityByPath("/maps/main"),
-								portal.leftWP:ToVector2(),
-								portal.rightWP:ToVector2(),
-								0.025,
-								Color(1, 0.5, 0),
-								0.05
-							)
 
 							table.insert(portals, portal)
 						end
@@ -206,7 +197,6 @@ script Pathfinding extends Logic
 
 		local deltaRow = dstRow - srcRow
 		local deltaCol = dstCol - srcCol
-
 		if deltaRow ~= 0 and deltaCol ~= 0 then
 			if not self:InBounds(srcRow, srcCol + deltaCol, gridHeight, gridWidth) then
 				return false
@@ -243,7 +233,7 @@ script Pathfinding extends Logic
 
 		return true
 	end
-	method table ComputePortal(integer srcRow, integer srcCol, integer dstRow, integer dstCol, number cellWorldSize, integer gridHeight, integer gridWidth)
+	method table ComputePortal(integer srcRow, integer srcCol, integer dstRow, integer dstCol, number cellWorldSize, table grid, integer gridHeight, integer gridWidth)
 		local srcWP = self:ConvertIndex2DToWorld(srcRow, srcCol, cellWorldSize, gridHeight, gridWidth)
 		local dstWP = self:ConvertIndex2DToWorld(dstRow, dstCol, cellWorldSize, gridHeight, gridWidth)
 		local midpointWP = (srcWP + dstWP) * 0.5
@@ -252,26 +242,110 @@ script Pathfinding extends Logic
 
 		if srcRow == dstRow then
 			if srcCol < dstCol then
+				local leftWP = midpointWP + Vector3(0, 1, 0) * cellWorldSize * 0.5
+				local rightWP = midpointWP + Vector3(0, -1, 0) * cellWorldSize * 0.5
+
+				local prevUpperRow = srcRow
+				local currUpperRow = srcRow + 1
+				while self:AdjacencyValidation(prevUpperRow, srcCol, currUpperRow, srcCol, grid, gridHeight, gridWidth) and
+					  self:AdjacencyValidation(prevUpperRow, dstCol, currUpperRow, dstCol, grid, gridHeight, gridWidth) do
+					leftWP += Vector3(0, 1, 0) * cellWorldSize
+					prevUpperRow = currUpperRow
+					currUpperRow += 1
+				end
+
+				local prevLowerRow = srcRow
+				local currLowerRow = srcRow - 1
+				while self:AdjacencyValidation(prevLowerRow, srcCol, currLowerRow, srcCol, grid, gridHeight, gridWidth) and
+					  self:AdjacencyValidation(prevLowerRow, dstCol, currLowerRow, dstCol, grid, gridHeight, gridWidth) do
+					rightWP += Vector3(0, -1, 0) * cellWorldSize
+					prevLowerRow = currLowerRow
+					currLowerRow -= 1
+				end
+
 				portal = {
-					leftWP = midpointWP + Vector3(0, 1, 0) * cellWorldSize * 0.5,
-					rightWP = midpointWP + Vector3(0, -1, 0) * cellWorldSize * 0.5
+					leftWP = leftWP,
+					rightWP = rightWP
 				}
 			elseif srcCol > dstCol then
+				local leftWP = midpointWP + Vector3(0, -1, 0) * cellWorldSize * 0.5
+				local rightWP = midpointWP + Vector3(0, 1, 0) * cellWorldSize * 0.5
+
+				local prevUpperRow = srcRow
+				local currUpperRow = srcRow + 1
+				while self:AdjacencyValidation(prevUpperRow, srcCol, currUpperRow, srcCol, grid, gridHeight, gridWidth) and
+					  self:AdjacencyValidation(prevUpperRow, dstCol, currUpperRow, dstCol, grid, gridHeight, gridWidth) do
+					rightWP += Vector3(0, 1, 0) * cellWorldSize
+					prevUpperRow = currUpperRow
+					currUpperRow += 1
+				end
+
+				local prevLowerRow = srcRow
+				local currLowerRow = srcRow - 1
+				while self:AdjacencyValidation(prevLowerRow, srcCol, currLowerRow, srcCol, grid, gridHeight, gridWidth) and
+					  self:AdjacencyValidation(prevLowerRow, dstCol, currLowerRow, dstCol, grid, gridHeight, gridWidth) do
+					leftWP += Vector3(0, -1, 0) * cellWorldSize
+					prevLowerRow = currLowerRow
+					currLowerRow -= 1
+				end
+
 				portal = {
-					leftWP = midpointWP + Vector3(0, -1, 0) * cellWorldSize * 0.5,
-					rightWP = midpointWP + Vector3(0, 1, 0) * cellWorldSize * 0.5
+					leftWP = leftWP,
+					rightWP = rightWP
 				}
 			end
 		elseif srcCol == dstCol then
 			if srcRow < dstRow then
+				local leftWP = midpointWP + Vector3(-1, 0, 0) * cellWorldSize * 0.5
+				local rightWP = midpointWP + Vector3(1, 0, 0) * cellWorldSize * 0.5
+
+				local prevLeftCol = srcCol
+				local currLeftCol = srcCol - 1
+				while self:AdjacencyValidation(srcRow, prevLeftCol, srcRow, currLeftCol, grid, gridHeight, gridWidth) and
+					  self:AdjacencyValidation(dstRow, prevLeftCol, dstRow, currLeftCol, grid, gridHeight, gridWidth) do
+					leftWP += Vector3(-1, 0, 0) * cellWorldSize
+					prevLeftCol = currLeftCol
+					currLeftCol -= 1
+				end
+
+				local prevRightCol = srcCol
+				local currRightCol = srcCol + 1
+				while self:AdjacencyValidation(srcRow, prevRightCol, srcRow, currRightCol, grid, gridHeight, gridWidth) and
+					  self:AdjacencyValidation(dstRow, prevRightCol, dstRow, currRightCol, grid, gridHeight, gridWidth) do
+					rightWP += Vector3(1, 0, 0) * cellWorldSize
+					prevRightCol = currRightCol
+					currRightCol += 1
+				end
+
 				portal = {
-					leftWP = midpointWP + Vector3(-1, 0, 0) * cellWorldSize * 0.5,
-					rightWP = midpointWP + Vector3(1, 0, 0) * cellWorldSize * 0.5
+					leftWP = leftWP,
+					rightWP = rightWP
 				}
 			elseif srcRow > dstRow then
+				local leftWP = midpointWP + Vector3(1, 0, 0) * cellWorldSize * 0.5
+				local rightWP = midpointWP + Vector3(-1, 0, 0) * cellWorldSize * 0.5
+
+				local prevLeftCol = srcCol
+				local currLeftCol = srcCol - 1
+				while self:AdjacencyValidation(srcRow, prevLeftCol, srcRow, currLeftCol, grid, gridHeight, gridWidth) and
+					  self:AdjacencyValidation(dstRow, prevLeftCol, dstRow, currLeftCol, grid, gridHeight, gridWidth) do
+					rightWP += Vector3(-1, 0, 0) * cellWorldSize
+					prevLeftCol = currLeftCol
+					currLeftCol -= 1
+				end
+
+				local prevRightCol = srcCol
+				local currRightCol = srcCol + 1
+				while self:AdjacencyValidation(srcRow, prevRightCol, srcRow, currRightCol, grid, gridHeight, gridWidth) and
+					  self:AdjacencyValidation(dstRow, prevRightCol, dstRow, currRightCol, grid, gridHeight, gridWidth) do
+					leftWP += Vector3(1, 0, 0) * cellWorldSize
+					prevRightCol = currRightCol
+					currRightCol += 1
+				end
+
 				portal = {
-					leftWP = midpointWP + Vector3(1, 0, 0) * cellWorldSize * 0.5,
-					rightWP = midpointWP + Vector3(-1, 0, 0) * cellWorldSize * 0.5
+					leftWP = leftWP,
+					rightWP = rightWP
 				}
 			end
 		else
