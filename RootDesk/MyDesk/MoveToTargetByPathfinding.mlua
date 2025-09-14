@@ -66,8 +66,8 @@ script MoveToTargetByPathfinding extends BTNode
 						waypointWorldPositions[index]:ToVector2(),
 						waypointWorldPositions[index + 1]:ToVector2(),
 						0.025,
-						Color(0, 1, 1),
-						0.05
+						Color(0, 1, 1, 0.5),
+						false
 					)
 				end
 			end
