@@ -21,9 +21,9 @@ script Pathfinding extends Logic
 
 	method table ComputePath(Vector3 departureWorldPosition, Vector3 arrivalWorldPosition, number cellWorldSize, table grid, integer gridHeight, integer gridWidth)
 		local waypointWorldPositions = nil
-		local arrivalRow, arrivalCol = self:ConvertWorldToIndex2D(arrivalWorldPosition, cellWorldSize, gridHeight, gridWidth)
+		local arrivalRow, arrivalCol = _Convert:WorldToIndex2D(arrivalWorldPosition, cellWorldSize, gridHeight, gridWidth)
 		if self:Walkable(arrivalRow, arrivalCol, grid, gridHeight, gridWidth) then
-			local departureRow, departureCol = self:ConvertWorldToIndex2D(departureWorldPosition, cellWorldSize, gridHeight, gridWidth)
+			local departureRow, departureCol = _Convert:WorldToIndex2D(departureWorldPosition, cellWorldSize, gridHeight, gridWidth)
 			if departureRow == arrivalRow and departureCol == arrivalCol then
 				waypointWorldPositions = {
 					departureWorldPosition,
@@ -32,8 +32,8 @@ script Pathfinding extends Logic
 			else
 				local adjOffsets = self.adjOffsets
 
-				local departureIndex = self:ConvertIndex2DTo1D(departureRow, departureCol, gridWidth)
-				local arrivalIndex = self:ConvertIndex2DTo1D(arrivalRow, arrivalCol, gridWidth)
+				local departureIndex = _Convert:Index2DTo1D(departureRow, departureCol, gridWidth)
+				local arrivalIndex = _Convert:Index2DTo1D(arrivalRow, arrivalCol, gridWidth)
 				local cellCount = gridHeight * gridWidth
 
 				local gScores = {}
@@ -57,10 +57,10 @@ script Pathfinding extends Logic
 						local portals = {}
 						for i = 1, #waypointIndices - 1 do
 							local srcWaypointIndex = waypointIndices[i]
-							local srcWaypointRow, srcWaypointCol = self:ConvertIndex1DTo2D(srcWaypointIndex, gridWidth)
+							local srcWaypointRow, srcWaypointCol = _Convert:Index1DTo2D(srcWaypointIndex, gridWidth)
 
 							local dstWaypointIndex = waypointIndices[i + 1]
-							local dstWaypointRow, dstWaypointCol = self:ConvertIndex1DTo2D(dstWaypointIndex, gridWidth)
+							local dstWaypointRow, dstWaypointCol = _Convert:Index1DTo2D(dstWaypointIndex, gridWidth)
 
 							local portal = self:ComputePortal(
 								srcWaypointRow,
@@ -152,7 +152,7 @@ script Pathfinding extends Logic
 
 						break
 					else
-						local currRow, currCol = self:ConvertIndex1DTo2D(currIndex, gridWidth)
+						local currRow, currCol = _Convert:Index1DTo2D(currIndex, gridWidth)
 
 						for _, adjOffset in ipairs(adjOffsets) do
 							local adjRow = currRow + adjOffset.row
@@ -161,7 +161,7 @@ script Pathfinding extends Logic
 								continue
 							end
 
-							local adjIndex = self:ConvertIndex2DTo1D(adjRow, adjCol, gridWidth)
+							local adjIndex = _Convert:Index2DTo1D(adjRow, adjCol, gridWidth)
 							local currGScore = gScores[currIndex]
 							local oldAdjGScore = gScores[adjIndex]
 							local newAdjGScore = currGScore + adjOffset.weight
@@ -187,7 +187,7 @@ script Pathfinding extends Logic
 		return max + (self.sqrt2 - 1) * min
 	end
 	method boolean AdjacencyValidation(integer srcRow, integer srcCol, integer dstRow, integer dstCol, table grid, integer gridHeight, integer gridWidth)
-		if not self:InBounds(dstRow, dstCol, gridHeight, gridWidth) then
+		if not _Convert:InBounds(dstRow, dstCol, gridHeight, gridWidth) then
 			return false
 		end
 
@@ -198,7 +198,7 @@ script Pathfinding extends Logic
 		local deltaRow = dstRow - srcRow
 		local deltaCol = dstCol - srcCol
 		if deltaRow ~= 0 and deltaCol ~= 0 then
-			if not self:InBounds(srcRow, srcCol + deltaCol, gridHeight, gridWidth) then
+			if not _Convert:InBounds(srcRow, srcCol + deltaCol, gridHeight, gridWidth) then
 				return false
 			end
 
@@ -206,7 +206,7 @@ script Pathfinding extends Logic
 				return false
 			end
 
-			if not self:InBounds(srcRow + deltaRow, srcCol, gridHeight, gridWidth) then
+			if not _Convert:InBounds(srcRow + deltaRow, srcCol, gridHeight, gridWidth) then
 				return false
 			end
 
@@ -222,11 +222,11 @@ script Pathfinding extends Logic
 			return true
 		end
 
-		if not self:InBounds(row, col, gridHeight, gridWidth) then
+		if not _Convert:InBounds(row, col, gridHeight, gridWidth) then
 			return false
 		end
 		
-		local index = self:ConvertIndex2DTo1D(row, col, gridWidth)
+		local index = _Convert:Index2DTo1D(row, col, gridWidth)
 		if grid[index] < 1 then
 			return false
 		end
@@ -234,8 +234,8 @@ script Pathfinding extends Logic
 		return true
 	end
 	method table ComputePortal(integer srcRow, integer srcCol, integer dstRow, integer dstCol, number cellWorldSize, table grid, integer gridHeight, integer gridWidth)
-		local srcWP = self:ConvertIndex2DToWorld(srcRow, srcCol, cellWorldSize, gridHeight, gridWidth)
-		local dstWP = self:ConvertIndex2DToWorld(dstRow, dstCol, cellWorldSize, gridHeight, gridWidth)
+		local srcWP = _Convert:Index2DToWorld(srcRow, srcCol, cellWorldSize, gridHeight, gridWidth)
+		local dstWP = _Convert:Index2DToWorld(dstRow, dstCol, cellWorldSize, gridHeight, gridWidth)
 		local midpointWP = (srcWP + dstWP) * 0.5
 
 		local portal = nil
@@ -381,52 +381,5 @@ script Pathfinding extends Logic
 	end
 	method boolean NearlyEqual(Vector3 a, Vector3 b, number tolerance)
 		return math.abs((a:ToVector2() - b:ToVector2()):Magnitude()) <= tolerance
-	end
-
-	-- converter
-
-	method any InBounds(integer row, integer col, integer gridHeight, integer gridWidth)
-		if row < 1 or row > gridHeight then
-			return false
-		end
-
-		if col < 1 or col > gridWidth then
-			return false
-		end
-
-		return true
-	end
-	method integer ConvertIndex2DTo1D(integer row, integer col, integer gridWidth)
-		return (row - 1) * gridWidth + col
-	end
-	method any ConvertIndex1DTo2D(integer index, integer gridWidth)
-		local row = math.floor((index - 1) / gridWidth) + 1
-		local col = ((index - 1) % gridWidth) + 1
-		return row, col
-	end
-	method Vector3 ConvertIndex2DToWorld(integer row, integer col, number cellWorldSize, integer gridHeight, integer gridWidth)
-		local gridWorldHeight = cellWorldSize * gridHeight
-		local gridWorldWidth = cellWorldSize * gridWidth
-
-		local y = (row - 0.5) * cellWorldSize - (gridWorldHeight * 0.5)
-		local x = (col - 0.5) * cellWorldSize - (gridWorldWidth * 0.5)
-
-		return Vector3(x, y, 0)
-	end
-	method any ConvertWorldToIndex2D(Vector3 worldPosition, number cellWorldSize, integer gridHeight, integer gridWidth)
-		local gridWorldHeight = cellWorldSize * gridHeight
-		local gridWorldWidth = cellWorldSize * gridWidth
-
-		local gridHalfWorldHeight = gridWorldHeight * 0.5
-		local gridHalfWorldWidth = gridWorldWidth * 0.5
-
-		local row = math.floor((worldPosition.y + gridWorldHeight * 0.5) / cellWorldSize)
-		local col = math.floor((worldPosition.x + gridWorldWidth * 0.5) / cellWorldSize)
-
-		-- 0 기반 인덱스에서 1 기반 인덱스로 변환
-		row += 1
-		col += 1
-
-		return row, col
 	end
 end

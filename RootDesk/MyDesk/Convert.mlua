@@ -1,0 +1,47 @@
+@Logic
+script Convert extends Logic
+	method any InBounds(integer row, integer col, integer gridHeight, integer gridWidth)
+		if row < 1 or row > gridHeight then
+			return false
+		end
+		
+		if col < 1 or col > gridWidth then
+			return false
+		end
+		
+		return true
+	end
+	method integer Index2DTo1D(integer row, integer col, integer gridWidth)
+		return (row - 1) * gridWidth + col
+	end
+	method any Index1DTo2D(integer index, integer gridWidth)
+		local row = math.floor((index - 1) / gridWidth) + 1
+		local col = ((index - 1) % gridWidth) + 1
+		return row, col
+	end
+	method Vector3 Index2DToWorld(integer row, integer col, number cellWorldSize, integer gridHeight, integer gridWidth)
+		local gridWorldHeight = cellWorldSize * gridHeight
+		local gridWorldWidth = cellWorldSize * gridWidth
+		
+		local y = (row - 0.5) * cellWorldSize - (gridWorldHeight * 0.5)
+		local x = (col - 0.5) * cellWorldSize - (gridWorldWidth * 0.5)
+		
+		return Vector3(x, y, 0)
+	end
+	method any WorldToIndex2D(Vector3 worldPosition, number cellWorldSize, integer gridHeight, integer gridWidth)
+		local gridWorldHeight = cellWorldSize * gridHeight
+		local gridWorldWidth = cellWorldSize * gridWidth
+		
+		local gridHalfWorldHeight = gridWorldHeight * 0.5
+		local gridHalfWorldWidth = gridWorldWidth * 0.5
+		
+		local row = math.floor((worldPosition.y + gridWorldHeight * 0.5) / cellWorldSize)
+		local col = math.floor((worldPosition.x + gridWorldWidth * 0.5) / cellWorldSize)
+		
+		-- 0 기반 인덱스에서 1 기반 인덱스로 변환
+		row += 1
+		col += 1
+		
+		return row, col
+	end
+end
