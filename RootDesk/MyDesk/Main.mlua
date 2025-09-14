@@ -19,4 +19,37 @@ script Main extends Component
 		1, 0, 1, 1, 1, 1, 1, 1, 0, 1,
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 	}
+
+	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		local rectTileMapEntity = _EntityService:GetEntityByPath("/maps/main/RectTileMap")
+		local rectTileMap = rectTileMapEntity.RectTileMapComponent
+
+		rectTileMap:Clear()
+
+		local cellWorldSize = self.cellWorldSize
+		local gridHeight = self.gridHeight
+		local gridWidth = self.gridWidth
+		local grid = self.grid
+
+		for row = 1, gridHeight do
+			for col = 1, gridWidth do
+				local index = _Convert:Index2DTo1D(row, col, gridWidth)
+				if grid[index] < 1 then
+					continue
+				end
+				
+				local tileIndex
+				if row % 2 == col % 2 then
+					tileIndex = 1
+				else
+					tileIndex = 2
+				end
+
+				local cellWorldPosition = _Convert:Index2DToWorld(row, col, cellWorldSize, gridHeight, gridWidth)
+
+				rectTileMap:SetTile(tileIndex, Vector2Int(cellWorldPosition.x, cellWorldPosition.y))
+			end
+		end
+	end
 end
