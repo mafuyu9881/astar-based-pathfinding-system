@@ -190,7 +190,7 @@
             {
               "@type": "MOD.Core.TransformComponent",
               "Position": {
-                "x": -0.01,
+                "x": -5.0,
                 "y": 0.2,
                 "z": 999.999
               },
