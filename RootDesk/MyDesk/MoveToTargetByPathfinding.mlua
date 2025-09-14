@@ -72,11 +72,9 @@ script MoveToTargetByPathfinding extends BTNode
 				end
 			end
 			
-			--parentMovement:MoveToDirection((waypointWorldPositions[2] - departureWorldPosition):ToVector2():Normalize(), 0)
 			parentMovement:SetWorldPosition(parentTransform.WorldPosition:ToVector2() + (waypointWorldPositions[2] - departureWorldPosition):ToVector2():Normalize() * deltaTime * parentMovement.InputSpeed)
 			return BehaviourTreeStatus.Running
 		else
-			--parentMovement:Stop()
 			return BehaviourTreeStatus.Success
 		end
 	end
