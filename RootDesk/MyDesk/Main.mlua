@@ -53,11 +53,7 @@ script Main extends Component
 				end
 
 				local cellWorldPosition = _Convert:Index2DToWorld(row, col, cellWorldSize, gridHeight, gridWidth)
-
 				local cellPosition = Vector2Int(cellWorldPosition.x, cellWorldPosition.y)
-
-				print("cellPosition.x: " .. cellPosition.x)
-				print("cellPosition.y: " .. cellPosition.y)
 
 				rectTileMap:SetTile(tileIndex, cellPosition)
 			end
