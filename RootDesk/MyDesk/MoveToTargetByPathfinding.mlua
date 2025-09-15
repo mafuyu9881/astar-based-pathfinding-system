@@ -72,6 +72,7 @@ script MoveToTargetByPathfinding extends BTNode
 				end
 			end
 			
+			-- todo: 경로가 잘못 계산되는 등의 이유로 아주 짧은 거리를 왔다갔다하는 현상이 발생할 수 있음
 			parentMovement:SetWorldPosition(parentTransform.WorldPosition:ToVector2() + (waypointWorldPositions[2] - departureWorldPosition):ToVector2():Normalize() * deltaTime * parentMovement.InputSpeed)
 			return BehaviourTreeStatus.Running
 		else
