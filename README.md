@@ -1,7 +1,7 @@
 # A* Based Pathfinding System in MSW
 <img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/b765746a-3fe9-4978-a5c0-7673673f3148"/>
 
-A* with Funnel algorithm implementation running on MSW
+Funnel algorithm with A* implementation running on MSW
 
 Demo: https://maplestoryworlds.nexon.com/play/044859d3b8c54aaeb0e710b4f7911504
 
